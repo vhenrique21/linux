@@ -412,5 +412,5 @@
 395	common	pkey_alloc		sys_pkey_alloc
 396	common	pkey_free		sys_pkey_free
 397	common	statx			sys_statx
-398	common	insert			sys_insert
-399	common	remove			sys_remove
+398	common	stack_push			sys_stack_push
+399	common	stack_pop			sys_stack_pop
