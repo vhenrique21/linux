@@ -1,5 +1,6 @@
 #include <linux/linkage.h>
 #include <linux/list.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 
 static LIST_HEAD(stack);
@@ -27,7 +28,7 @@ asmlinkage long sys_stack_pop(void)
     struct stack_value* top_stack_value;
 
     if (list_empty(&stack)) {
-        /* TODO: Alertar alguem */
+        printk("EMPTY STACK\n");
         return -1;
     }
 
