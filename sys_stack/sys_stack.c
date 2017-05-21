@@ -16,7 +16,6 @@ asmlinkage long sys_stack_push(int value)
 
 	new_stack_value = kmalloc(sizeof(*new_stack_value), GFP_KERNEL);
 	new_stack_value->value = value;
-	INIT_LIST_HEAD(&new_stack_value->stack);
 
 	list_add(&new_stack_value->stack, &stack);
 	return 0;
