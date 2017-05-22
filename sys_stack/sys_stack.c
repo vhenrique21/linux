@@ -58,10 +58,6 @@ static struct attribute *attrs[] = {
 	NULL,
 };
 
-static const struct attribute_group sys_stack_group = {
-	.attrs = attrs,
-};
-
 static int __init sys_stack_init(void)
 {
 	int retval;
@@ -70,7 +66,7 @@ static int __init sys_stack_init(void)
 	if (!sys_stack_kobject)
 		pr_debug("stack_dev: can't create kobject");
 
-	retval = sysfs_create_group(sys_stack_kobject, &sys_stack_group);
+	retval = sysfs_create_file(sys_stack_kobject, *attrs);
 	if (retval) {
 		pr_debug("stack_dev: can't create sysfs group");
 		kobject_put(sys_stack_kobject);
