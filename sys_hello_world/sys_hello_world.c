@@ -3,5 +3,5 @@
 
 asmlinkage long sys_hello_world(void)
 {
-  return printk("Hello World From The Kernel!\n");
+	return pr_info("Hello World From The Kernel!\n");
 }
