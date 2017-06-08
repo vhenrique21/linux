@@ -910,5 +910,7 @@ asmlinkage long sys_stack_pop(void);
 asmlinkage long sys_hello_world(void);
 asmlinkage long sys_queue_push(int value);
 asmlinkage long sys_queue_pop(void);
+asmlinkage long sys_wait_lock(int process);
+asmlinkage long sys_wait_unlock(void);
 
 #endif

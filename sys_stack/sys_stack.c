@@ -10,7 +10,7 @@ struct stack_value {
 	struct list_head stack;
 };
 
-static unsigned long count;
+static unsigned long count = 0;
 static struct kobject *sys_stack_kobject;
 
 asmlinkage long sys_stack_push(int value)
@@ -84,6 +84,4 @@ static void __exit sys_stack_exit(void)
 module_init(sys_stack_init);
 module_exit(sys_stack_exit);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Tiago Koji Castro Shibata <tishi@linux.com>");
-MODULE_AUTHOR("Eric Rodrigues Pires <ericpires9@gmail.com>");
 MODULE_DESCRIPTION("Simple stack module");

@@ -10,7 +10,7 @@ struct queue_value {
 	struct list_head queue;
 };
 
-static unsigned long count;
+static unsigned long count = 0;
 static struct kobject *sys_queue_kobject;
 
 asmlinkage long sys_queue_push(int value)
