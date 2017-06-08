@@ -1,13 +1,14 @@
 #include <linux/linkage.h>
 #include <linux/wait.h>
 #include <linux/pid.h>
+#include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 
 static DECLARE_WAIT_QUEUE_HEAD(queue);
 
 static unsigned long count = 0;
-static struct kobject *sys_stack_kobject;
+static struct kobject *sys_wait_kobject;
 
 asmlinkage long sys_wait_lock(int process)
 {
@@ -19,7 +20,7 @@ asmlinkage long sys_wait_lock(int process)
 	process_task = pid_task(process_pid, PIDTYPE_PID);
 	init_waitqueue_entry(&process_wait, process_task);
 
-	prepare_to_wait_exclusive(queue, &process_wait, TASK_INTERRUPTIBLE);
+	prepare_to_wait_exclusive(&queue, &process_wait, TASK_INTERRUPTIBLE);
 	count++;
 
 	return 0;
@@ -29,7 +30,7 @@ asmlinkage long sys_wait_unlock(void)
 {
 	if (count) {
 		count--;
-		wake_up(queue);
+		wake_up(&queue);
 
 		return 0;
 	}
@@ -74,6 +75,5 @@ static void __exit sys_wait_exit(void)
 
 module_init(sys_wait_init);
 module_exit(sys_wait_exit);
-
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Process locker and unlocker module");
