@@ -16,6 +16,8 @@ struct queue_value {
 	struct list_head queue;
 };
 
+
+
 static int queue_push(int value)
 {
 	struct queue_value *new_queue_value;
@@ -48,10 +50,24 @@ static int queue_pop(void)
 	return value;
 }
 
+static int queue_has(int value)
+{
+	struct list_head *pos;
+	struct queue_value *current_queue_value;
+	list_for_each(pos, &queue) {
+		current_queue_value = list_entry(pos, struct queue_value, queue);
+		if (current_queue_value->value == value)
+			return 1;
+	}
+	return 0;
+}
+
+
+
 asmlinkage long sys_wait_lock(int process)
 {
-	struct pid* process_pid;
-	struct task_struct* process_task;
+	struct pid *process_pid;
+	struct task_struct *process_task;
 	wait_queue_t process_wait;
 	init_wait(&process_wait);
 
@@ -61,6 +77,10 @@ asmlinkage long sys_wait_lock(int process)
 	if (process_task == NULL)
 	{
 		printk("No such pid\n");
+		return 1;
+	} else if (queue_has(process)) {
+		printk("pid already locked\n");
+		return 1;
 	}
 
 	kill_pid(process_pid, SIGSTOP, 1);
@@ -72,7 +92,7 @@ asmlinkage long sys_wait_lock(int process)
 asmlinkage long sys_wait_unlock(void)
 {
 	int process;
-	struct pid* process_pid;
+	struct pid *process_pid;
 	if (count) {
 		process = queue_pop();
 		process_pid = find_get_pid(process);
@@ -81,6 +101,8 @@ asmlinkage long sys_wait_unlock(void)
 	}
 	return 1;
 }
+
+
 
 static ssize_t count_show(struct kobject *kobj, struct kobj_attribute *attr,
 			    char *buf)
