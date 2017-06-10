@@ -52,10 +52,8 @@ static int queue_pop(void)
 
 static int queue_has(int value)
 {
-	struct list_head *pos;
 	struct queue_value *current_queue_value;
-	list_for_each(pos, &queue) {
-		current_queue_value = list_entry(pos, struct queue_value, queue);
+	list_for_each_entry(current_queue_value, &queue, queue) {
 		if (current_queue_value->value == value)
 			return 1;
 	}
