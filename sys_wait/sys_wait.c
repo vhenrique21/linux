@@ -4,34 +4,79 @@
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/slab.h>
-
-static DECLARE_WAIT_QUEUE_HEAD(queue);
+#include <linux/sched/signal.h>
 
 static unsigned long count = 0;
 static struct kobject *sys_wait_kobject;
+
+static LIST_HEAD(queue);
+
+struct queue_value {
+	int value;
+	struct list_head queue;
+};
+
+static int queue_push(int value)
+{
+	struct queue_value *new_queue_value;
+
+	new_queue_value = kmalloc(sizeof(*new_queue_value), GFP_KERNEL);
+	new_queue_value->value = value;
+
+	list_add_tail(&new_queue_value->queue, &queue);
+	count++;
+
+	return 0;
+}
+
+static int queue_pop(void)
+{
+	int value;
+	struct queue_value *top_queue_value;
+
+	if (list_empty(&queue)) {
+		pr_debug("EMPTY QUEUE\n");
+		return -1;
+	}
+
+	top_queue_value = list_first_entry(&queue, struct queue_value, queue);
+	value = top_queue_value->value;
+	list_del(&top_queue_value->queue);
+	kfree(top_queue_value);
+	count--;
+
+	return value;
+}
 
 asmlinkage long sys_wait_lock(int process)
 {
 	struct pid* process_pid;
 	struct task_struct* process_task;
-	DEFINE_WAIT(process_wait);
+	wait_queue_t process_wait;
+	init_wait(&process_wait);
 
 	process_pid = find_get_pid(process);
-	process_task = pid_task(process_pid, PIDTYPE_PID);
-	init_waitqueue_entry(&process_wait, process_task);
 
-	prepare_to_wait_exclusive(&queue, &process_wait, TASK_INTERRUPTIBLE);
-	count++;
+	process_task = pid_task(process_pid, PIDTYPE_PID);
+	if (process_task == NULL)
+	{
+		printk("No such pid\n");
+	}
+
+	kill_pid(process_pid, SIGSTOP, 1);
+	queue_push(process);
 
 	return 0;
 }
 
 asmlinkage long sys_wait_unlock(void)
 {
+	int process;
+	struct pid* process_pid;
 	if (count) {
-		count--;
-		wake_up(&queue);
-
+		process = queue_pop();
+		process_pid = find_get_pid(process);
+		kill_pid(process_pid, SIGCONT, 1);
 		return 0;
 	}
 	return 1;
