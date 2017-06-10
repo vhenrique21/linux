@@ -12,13 +12,13 @@ static struct kobject *sys_wait_kobject;
 static LIST_HEAD(queue);
 
 struct queue_value {
-	int value;
+	struct task_struct *value;
 	struct list_head queue;
 };
 
 
 
-static int queue_push(int value)
+static int queue_push(struct task_struct *value)
 {
 	struct queue_value *new_queue_value;
 
@@ -31,14 +31,14 @@ static int queue_push(int value)
 	return 0;
 }
 
-static int queue_pop(void)
+static struct task_struct *queue_pop(void)
 {
-	int value;
+	struct task_struct *value;
 	struct queue_value *top_queue_value;
 
 	if (list_empty(&queue)) {
 		pr_debug("EMPTY QUEUE\n");
-		return -1;
+		return NULL;
 	}
 
 	top_queue_value = list_first_entry(&queue, struct queue_value, queue);
@@ -50,11 +50,11 @@ static int queue_pop(void)
 	return value;
 }
 
-static int queue_has(int value)
+static int queue_has(struct task_struct *value)
 {
 	struct queue_value *current_queue_value;
 	list_for_each_entry(current_queue_value, &queue, queue) {
-		if (current_queue_value->value == value)
+		if (current_queue_value->value->pid == value->pid)
 			return 1;
 	}
 	return 0;
@@ -66,36 +66,33 @@ asmlinkage long sys_wait_lock(int process)
 {
 	struct pid *process_pid;
 	struct task_struct *process_task;
-	wait_queue_t process_wait;
-	init_wait(&process_wait);
 
 	process_pid = find_get_pid(process);
-
 	process_task = pid_task(process_pid, PIDTYPE_PID);
-	if (process_task == NULL)
+	if (!process_task)
 	{
 		printk("No such pid\n");
 		return 1;
-	} else if (queue_has(process)) {
+	} else if (queue_has(process_task)) {
 		printk("pid already locked\n");
 		return 1;
 	}
 
-	kill_pid(process_pid, SIGSTOP, 1);
-	queue_push(process);
+	send_sig(SIGSTOP, process_task, 1);
+	queue_push(process_task);
 
 	return 0;
 }
 
 asmlinkage long sys_wait_unlock(void)
 {
-	int process;
-	struct pid *process_pid;
+	struct task_struct *process_task;
 	if (count) {
-		process = queue_pop();
-		process_pid = find_get_pid(process);
-		kill_pid(process_pid, SIGCONT, 1);
-		return 0;
+		process_task = queue_pop();
+		if (process_task) {
+			send_sig(SIGCONT, process_task, 1);
+			return 0;
+		}
 	}
 	return 1;
 }
