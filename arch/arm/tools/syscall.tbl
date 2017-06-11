@@ -415,3 +415,5 @@
 398	common	stack_push		sys_stack_push
 399	common	stack_pop		sys_stack_pop
 400	common 	hello_world		sys_hello_world
+401	common	stop_process		sys_stop_process
+402	common 	continue_process	sys_continue_process
