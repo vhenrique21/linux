@@ -14,16 +14,18 @@ struct device_data {
 	char data;
 };
 
-static char get_data(void)
+static int get_data(char *c)
 {
 	struct device_data *entry;
-	char c;
+
+	if (list_empty(&data_queue))
+		return -1;
 
 	entry = list_first_entry(&data_queue, struct device_data, head);
-	c = entry->data;
+	*c = entry->data;
 	list_del(&entry->head);
 	kfree(entry);
-	return c;
+	return 0;
 }
 
 static long put_data(char c)
@@ -44,11 +46,9 @@ static ssize_t blocking_dev_read(struct file *filp, char __user *buffer,
 	char c;
 	if (!length)
 		return 0;
-	if (wait_event_interruptible(wq, !list_empty(&data_queue)))
+	if (wait_event_interruptible(wq, !get_data(&c)))
 		return -ERESTARTSYS;
 
-	// FIXME Race condition if multiple readers
-	c = get_data();
 	// simple_read_from_buffer will update the file offset and check whether
 	// it fits the available data argument (1), use copy_to_user instead.
 	return 1 - copy_to_user(buffer, &c, 1);
