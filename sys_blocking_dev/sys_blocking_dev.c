@@ -4,6 +4,7 @@
 #include <linux/miscdevice.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/uaccess.h>
 
 static DECLARE_WAIT_QUEUE_HEAD(wq);
 static LIST_HEAD(data_queue);
@@ -40,12 +41,17 @@ static long put_data(char c)
 static ssize_t blocking_dev_read(struct file *filp, char __user *buffer,
 	size_t length, loff_t *ppos)
 {
+	char c;
+	if (!length)
+		return 0;
 	if (wait_event_interruptible(wq, !list_empty(&data_queue)))
 		return -ERESTARTSYS;
 
 	// FIXME Race condition if multiple readers
-	char c = get_data();
-	return simple_read_from_buffer(buffer, length, ppos, &c, 1);
+	c = get_data();
+	// simple_read_from_buffer will update the file offset and check whether
+	// it fits the available data argument (1), use copy_to_user instead.
+	return 1 - copy_to_user(buffer, &c, 1);
 }
 
 asmlinkage long sys_write_device(int data)
