@@ -5,11 +5,14 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/sched.h>
 
-static DECLARE_WAIT_QUEUE_HEAD(wq);
+extern wait_queue_head_t wq;
+
 static LIST_HEAD(data_queue);
 
-struct device_data {
+struct device_data
+{
 	struct list_head head;
 	char data;
 };
@@ -31,7 +34,8 @@ static int get_data(char *c)
 static long put_data(char c)
 {
 	struct device_data *entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-	if (!entry) {
+	if (!entry)
+	{
 		pr_debug("Device queue data allocation failed\n");
 		return -1;
 	}
@@ -41,7 +45,7 @@ static long put_data(char c)
 }
 
 static ssize_t blocking_dev_read(struct file *filp, char __user *buffer,
-	size_t length, loff_t *ppos)
+								 size_t length, loff_t *ppos)
 {
 	char c;
 	if (!length)
@@ -65,14 +69,12 @@ asmlinkage long sys_write_device(int data)
 
 static const struct file_operations blocking_dev_fops = {
 	.owner = THIS_MODULE,
-	.read  = blocking_dev_read
-};
+	.read = blocking_dev_read};
 
 static struct miscdevice id_misc_device = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name = "blocking_dev",
-	.fops = &blocking_dev_fops
-};
+	.fops = &blocking_dev_fops};
 
 static int __init blocking_dev_init(void)
 {
